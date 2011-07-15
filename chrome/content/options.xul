@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://mozapps/content/preferences/preferences.css" type="text/css"?>
+
+<prefwindow xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+    title="Steghide for Firefox preferences">
+    <prefpane>
+        <preferences>
+            <preference id="default-passphrase" instantApply="true" name="extensions.steghidefirefox.defaultPassphrase" type="string"/>
+            <preference id="dont-erase-previous-output-on-extract" instantApply="true" name="extensions.steghidefirefox.dontErasePreviousOutputOnExtract" type="bool"/>
+        </preferences>
+        <grid>
+            <columns>
+                <column/>
+                <column flex="1"/>
+            </columns>
+            <rows>
+                <row>
+                    <label value="Default passphrase:"/>
+                    <textbox preference="default-passphrase" type="password"/>
+                </row>
+                <row>
+                    <checkbox preference="dont-erase-previous-output-on-extract" label="Don't erase previous output on extract"/>
+                    <label/>
+                </row>
+            </rows>
+        </grid>
+    </prefpane>
+</prefwindow>

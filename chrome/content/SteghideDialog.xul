@@ -1,0 +1,766 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" xmlns:html="http://www.w3.org/1999/xhtml"
+    title="Steghide for Firefox"
+    onload="onLoad()"
+    onunload="onUnload()"
+    onkeypress="onKeyPress(event)">
+
+    <script type="text/javascript">
+    <![CDATA[
+        const KEY_ENTER = 13;
+        const KEY_ESCAPE = 27;
+        const MASKS = {title: 'Formats supported by steghide',
+                       filter: '*.jpg; *.jpeg; *.bmp; *.wav; *.au'};
+        const STATE_STOP = Components.interfaces.nsIWebProgressListener.STATE_STOP;
+        const WINDOWS = navigator.appVersion.indexOf('Windows') != -1;
+        function groupRadio() {
+            var radios = arguments;
+            for (var i = 0; i < radios.length; i++) {
+                var radio = document.getElementById(radios[i]);
+                radio.addEventListener('click', (function(self) {
+                    return (function() {
+                        for (var i = 0; i < radios.length; i++) {
+                            var id = radios[i];
+                            if (id != self.id)
+                                document.getElementById(id).setAttribute('selected', false);
+                        }
+                        self.setAttribute('selected', true);
+                    });
+                })(radio), false);
+            }
+        }
+        function getPref(name, type) {
+            var prefs = Components.classes['@mozilla.org/preferences-service;1']
+                            .getService(Components.interfaces.nsIPrefService)
+                            .getBranch('extensions.steghidefirefox.');
+            if (type == 'bool')
+                return prefs.getBoolPref(name);
+            else if (type == 'int')
+                return prefs.getIntPref(name);
+            else
+                return prefs.getCharPref(name);
+        }
+        function onLoad() {
+            if (location.search) {
+                var params = location.search.substr(1).split(';');
+                for (var i = 0; i < params.length; i++) {
+                    var kv = params[i].split('=');
+                    var key = kv[0];
+                    var value = kv[1];
+                    if (key == 't')
+                        document.getElementById('tabbox').selectedIndex = value;
+                    else if (key == 'url') {
+                        document.getElementById('cover_file').value = value;
+                        document.getElementById('stego_file').value = value;
+                    }
+                }
+            }
+            groupRadio('e_passphrase_r', 'e_keyfile_r');
+            groupRadio('x_passphrase_r', 'x_keyfile_r');
+            var passphrase = getPref('defaultPassphrase');
+            document.getElementById('e_passphrase').value = passphrase;
+            document.getElementById('x_passphrase').value = passphrase;
+            document.getElementById('dont_erase_previous_output').setAttribute('checked',
+                getPref('dontErasePreviousOutputOnExtract', 'bool')
+            );
+        }
+        function onUnload() {
+            var e = document.getElementById('compression');
+            e.setAttribute('value', e.value);
+        }
+        function onKeyPress(event) {
+            if (event.keyCode == KEY_ESCAPE)
+                close();
+        }
+        function stripFileProto(aURL) {
+            if (aURL.substr(0, 8) == 'file:///')
+                aURL = aURL.substr(WINDOWS ? 8 : 7);
+            return aURL;
+        }
+        function pickFile(title, filterObj, save, func) {
+            const nsIFilePicker = Components.interfaces.nsIFilePicker;
+            const mode = save ? nsIFilePicker.modeSave : nsIFilePicker.modeOpen;
+            var filePicker = Components.classes['@mozilla.org/filepicker;1']
+                                .createInstance(nsIFilePicker);
+            filePicker.init(window, title, mode);
+            if (filterObj)
+                filePicker.appendFilter(filterObj.title, filterObj.filter);
+            filePicker.appendFilters(nsIFilePicker.filterAll);
+            var result = filePicker.show();
+            if (result == nsIFilePicker.returnOK || result == nsIFilePicker.returnReplace)
+                func(filePicker.file.path);
+        }
+        function onBrowseCoverFileClick() {
+            pickFile('Select cover file', MASKS, false, function(path) {
+                document.getElementById('cover_file').value = path;
+            });
+        }
+        function onBrowseEmbedFileClick() {
+            pickFile('Select embed file', null, false, function(path) {
+                document.getElementById('embed_file').value = path;
+                document.getElementById('embed_text_cb').checked = false;
+            });
+        }
+        function onBrowseOutputFileClick() {
+            pickFile('Select output file', null, true, function(path) {
+                document.getElementById('output_file').value = path;
+                document.getElementById('overwrite_cover_file').checked = false;
+            });
+        }
+        function onBrowseStegoFileClick() {
+            pickFile('Select stego file', MASKS, false, function(path) {
+                document.getElementById('stego_file').value = path;
+            });
+        }
+        function onBrowseExtractFileClick() {
+            pickFile('Select extract file', null, true, function(path) {
+                document.getElementById('extract_file').value = path;
+                document.getElementById('output_to_stdout').checked = false;
+            });
+        }
+        function onBrowseExtractKeyfileClick() {
+            pickFile('Select key file', null, false, function(path) {
+                document.getElementById('x_keyfile').value = path;
+                document.getElementById('x_keyfile_r').click();
+            });
+        }
+        function onBrowseEmbedKeyfileClick() {
+            pickFile('Select key file', null, false, function(path) {
+                document.getElementById('e_keyfile').value = path;
+                document.getElementById('e_keyfile_r').click();
+            });
+        }
+        function onEmbedKeyPress(event) {
+            if (event.keyCode == KEY_ENTER)
+                document.getElementById('embed').click();
+        }
+        function onExtractKeyPress(event) {
+            if (event.keyCode == KEY_ENTER)
+                document.getElementById('extract').click();
+        }
+        function onPassChange(id) {
+            document.getElementById(id + '_r').click();
+        }
+        function onEmbedFileChange() {
+            document.getElementById('embed_text_cb').checked = false;
+        }
+        function onOutputFileChange() {
+            document.getElementById('overwrite_cover_file').checked = false;
+        }
+        function onExtractFileChange() {
+            document.getElementById('output_to_stdout').checked = false;
+        }
+        function onEmbedTextChange() {
+            document.getElementById('embed_text_cb').checked = true;
+        }
+        function clearTextboxes() {
+            for (var i = 0; i < arguments.length; i++)
+                document.getElementById(arguments[i]).value = '';
+        }
+        function saveTextAs(textboxId) {
+            pickFile('Save text as...', null, true, function(path) {
+                var writer = new java.io.BufferedWriter(new java.io.FileWriter(path));
+                try {
+                    writer.write(document.getElementById(textboxId).value);
+                }
+                finally {
+                    writer.close();
+                }
+            });
+        }
+        function makeURI(aURL, aOriginCharset, aBaseURI) {
+            var ioService = Components.classes['@mozilla.org/network/io-service;1']
+                                .getService(Components.interfaces.nsIIOService);
+            return ioService.newURI(aURL, aOriginCharset, aBaseURI);
+        }
+        function temporaryFileFromURL(aURL) {
+            var aURI = makeURI(aURL);
+            const nsIFile = Components.interfaces.nsIFile;
+            var aFile = Components.classes['@mozilla.org/file/directory_service;1']
+                        .getService(Components.interfaces.nsIProperties)
+                        .get('TmpD', nsIFile);
+            aFile.append('steghide.tmp');
+            aFile.createUnique(nsIFile.NORMAL_FILE_TYPE, 0600);
+            const nsIWebBrowserPersist = Components.interfaces.nsIWebBrowserPersist;
+            var persist = Components.classes['@mozilla.org/embedding/browser/nsWebBrowserPersist;1']
+                            .createInstance(nsIWebBrowserPersist);
+            persist.persistFlags = nsIWebBrowserPersist.PERSIST_FLAGS_REPLACE_EXISTING_FILES |
+                                   nsIWebBrowserPersist.PERSIST_FLAGS_FROM_CACHE;
+            progressListener = {
+                done: false,
+                onStateChange: function(aWebProgress, aRequest, aStateFlags, aStatus) {
+                    if (aStateFlags & STATE_STOP)
+                        this.done = true;
+                },
+                onLocationChange: function(aWebProgress, aRequest, aLocation) {
+                },
+                onProgressChange: function(aWebProgress, aRequest, aCurSelfProgress, aMaxSelfProgress,
+                                           aCurTotalProgress, aMaxTotalProgress) {
+                },
+                onStatusChange: function(aWebProgress, aRequest, aStatus, aMessage) {
+                },
+                onSecurityChange: function(aWebProgress, aRequest, aState) {
+                },
+                QueryInterface: function(iid) {
+                    if (iid.equals(Components.interfaces.nsIWebProgressListener) ||
+                        iid.equals(Components.interfaces.nsISupports))
+                        return this;
+                    throw Components.results.NS_ERROR_NO_INTERFACE;
+                }
+            };
+            persist.progressListener = progressListener;
+            persist.saveURI(aURI, null, null, null, null, aFile);
+            var currentThread = Components.classes['@mozilla.org/thread-manager;1']
+                                    .getService(Components.interfaces.nsIThreadManager).currentThread;
+            while(!progressListener.done)
+                currentThread.processNextEvent(true);
+            return aFile.path;
+        }
+        function getOrCreateFile(uri, validate) {
+            var proto = uri.substring(0, uri.indexOf('://'));
+            if (validate && !validate(proto))
+                return null;
+            if (proto == 'file')
+                return {name: stripFileProto(uri)};
+            else if (proto == 'http' || proto == 'https')
+                return {name: temporaryFileFromURL(uri), temporary: true};
+            return {name: uri}
+        }
+        function unlink(filename) {
+            try {
+                var aFile = Components.classes['@mozilla.org/file/local;1']
+                                .createInstance(Components.interfaces.nsILocalFile);
+                aFile.initWithPath(filename);
+                aFile.remove(false);
+            }
+            catch (e) {
+                Components.utils.reportError(e);
+            }
+        }
+        function readPassphraseFromKeyfile(path) {
+            var reader = new java.io.BufferedReader(new java.io.FileReader(path));
+            try {
+                return reader.readLine();
+            }
+            finally {
+                reader.close();
+            }
+        }
+        function scrollTextboxToBottom(textbox) {
+            var ti = document.getAnonymousNodes(textbox)[0].childNodes[0];
+            ti.scrollTop = ti.scrollHeight;
+        }
+        function onEmbedCommand() {
+            try {
+                var cf = document.getElementById('cover_file').value;
+                if (!cf) {
+                    alert('Please, select the cover file.');
+                    return;
+                }
+                var ef = document.getElementById('embed_file').value;
+                var embedText = document.getElementById('embed_text_cb').checked;
+                if (!embedText && !ef) {
+                    alert('Please, select the embed file.');
+                    return;
+                }
+                var text = document.getElementById('embed_text').value;
+                if (embedText && !text) {
+                    alert('Nothing to hide. Enter some text, please.');
+                    return;
+                }
+                var sf = document.getElementById('output_file').value;
+                var overwriteCoverFile = document.getElementById('overwrite_cover_file').checked;
+                if (!overwriteCoverFile && !sf) {
+                    alert('Please, specify the output file name.');
+                    return;
+                }
+                var usePassphrase = document.getElementById('e_passphrase_r').getAttribute('selected') == 'true';
+                var useKeyfile = document.getElementById('e_keyfile_r').getAttribute('selected') == 'true';
+                var passphrase;
+                if (usePassphrase) {
+                    passphrase = document.getElementById('e_passphrase').value;
+                    if (!passphrase) {
+                        alert('Please, enter the passphrase.');
+                        return;
+                    }
+                }
+                else if (useKeyfile) {
+                    var keyfile = document.getElementById('e_keyfile').value;
+                    if (!keyfile) {
+                        alert('Please, select the keyfile.');
+                        return;
+                    }
+                    passphrase = readPassphraseFromKeyfile(keyfile);
+                    if (!passphrase) {
+                        alert('Sorry, but the keyfile seems to be empty.');
+                        return;
+                    }
+                }
+                var algorithm = document.getElementById('algorithm').selectedItem.value;
+                var mode = document.getElementById('mode').selectedItem.value;
+                var compression = document.getElementById('compression').value;
+                var noCheckSum = document.getElementById('no_checksum').checked;
+                var doNotEmbedFilename = document.getElementById('dont_embed_filename').checked;
+                var file = getOrCreateFile(cf, function(proto) {
+                    if ((proto == 'http' || proto == 'https') &&
+                        (overwriteCoverFile || sf == '')) {
+                        alert("Please, uncheck the 'Use cover file as output file' checkbox and specify the output file name.");
+                        return false;
+                    }
+                    return true;
+                });
+                if (file) {
+                    try {
+                        var command = ['steghide', 'embed', '-f'];
+                        command.push('-cf', file.name);
+                        command.push('-ef', embedText ? '-' : ef);
+                        command.push('-p', passphrase);
+                        if (algorithm == 'none')
+                            command.push('-e', algorithm);
+                        else
+                            command.push('-e', algorithm, mode);
+                        if (compression == 0)
+                            command.push('-Z');
+                        else
+                            command.push('-z', compression);
+                        if (noCheckSum)
+                            command.push('-K');
+                        if (doNotEmbedFilename)
+                            command.push('-N');
+                        if (!overwriteCoverFile)
+                            command.push('-sf', sf);
+                        var processBuilder = new java.lang.ProcessBuilder(command);
+                        processBuilder.redirectErrorStream(true);
+                        var process = processBuilder.start();
+                        if (embedText) {
+                            var processStdin = process.getOutputStream();
+                            processStdin.write((new java.lang.String(text)).getBytes('UTF8'));
+                            processStdin.close();
+                        }
+                        var processStdout = new java.io.BufferedReader(new java.io.InputStreamReader(
+                                                                            process.getInputStream()));
+                        var output = '';
+                        var line;
+                        while ((line = processStdout.readLine()) != null)
+                            output += line + '\n';
+                        var log = document.getElementById('embed_log');
+                        log.value = output;
+                        var returnValue = process.waitFor();
+                        if (returnValue == 0)
+                            log.value += 'Success.\n';
+                        scrollTextboxToBottom(log);
+                    }
+                    finally {
+                        if (file.temporary)
+                            unlink(file.name);
+                    }
+                }
+            }
+            catch(e) {
+                alert(e);
+            }
+        }
+        function onExtractCommand() {
+            try {
+                var sf = document.getElementById('stego_file').value;
+                if (!sf) {
+                    alert('Please, select the stego file.');
+                    return;
+                }
+                var xf = document.getElementById('extract_file').value;
+                var outputToStdout = document.getElementById('output_to_stdout').checked;
+                if (!outputToStdout && !xf) {
+                    alert('Please, specify the output file name.');
+                    return;
+                }
+                var usePassphrase = document.getElementById('x_passphrase_r').getAttribute('selected') == 'true';
+                var useKeyfile = document.getElementById('x_keyfile_r').getAttribute('selected') == 'true';
+                var passphrase;
+                if (usePassphrase) {
+                    passphrase = document.getElementById('x_passphrase').value;
+                    if (!passphrase) {
+                        alert('Please, enter the passphrase.');
+                        return;
+                    }
+                }
+                else if (useKeyfile) {
+                    var keyfile = document.getElementById('x_keyfile').value;
+                    if (!keyfile) {
+                        alert('Please, select the keyfile.');
+                        return;
+                    }
+                    passphrase = readPassphraseFromKeyfile(keyfile);
+                    if (!passphrase) {
+                        alert('Sorry, but the keyfile seems to be empty.');
+                        return;
+                    }
+                }
+                var file = getOrCreateFile(sf);
+                if (file) {
+                    try {
+                        var command = ['steghide', 'extract', '-f'];
+                        command.push('-sf', file.name);
+                        command.push('-xf', outputToStdout ? '-' : xf);
+                        command.push('-p', passphrase);
+                        var processBuilder = new java.lang.ProcessBuilder(command);
+                        var process = processBuilder.start();
+                        var processStdout = new java.io.BufferedReader(new java.io.InputStreamReader(
+                                                                            process.getInputStream(), 'IBM866'));
+                        var processStderr = new java.io.BufferedReader(new java.io.InputStreamReader(
+                                                                            process.getErrorStream()));
+                        var utf8Decoder = java.nio.charset.Charset.forName('UTF8').newDecoder();
+                        var cp1251Decoder = java.nio.charset.Charset.forName('CP1251').newDecoder();
+                        var log = document.getElementById('extract_log');
+                        var output = '';
+                        var line;
+                        while ((line = processStdout.readLine()) != null) {
+                            var byteBuffer = java.nio.ByteBuffer.wrap((new java.lang.String(line)).getBytes('IBM866'));
+                            try {
+                                line = utf8Decoder.decode(byteBuffer).toString();
+                            }
+                            catch(e) {
+                                try {
+                                    line = cp1251Decoder.decode(byteBuffer).toString();
+                                }
+                                catch (e2) {
+                                    log.value = 'Cannot decode data. Quite likely it is binary data, not text.\n';
+                                    return;
+                                }
+                            }
+                            output += line + '\n';
+                        }
+                        if (document.getElementById('dont_erase_previous_output').getAttribute('checked') == 'true')
+                            document.getElementById('extracted_text').value += output;
+                        else
+                            document.getElementById('extracted_text').value = output;
+                        var stderr = '';
+                        while ((line = processStderr.readLine()) != null)
+                            stderr += line + '\n';
+                        log.value = stderr;
+                        var returnValue = process.waitFor();
+                        if (returnValue == 0)
+                            log.value += 'Success.\n';
+                        scrollTextboxToBottom(log);
+                    }
+                    finally {
+                        if (file.temporary)
+                            unlink(file.name);
+                    }
+                }
+            }
+            catch(e) {
+                alert(e);
+            }
+        }
+        function showSteghideInfo(extract) {
+            try {
+                var sf;
+                if (extract)
+                    sf = document.getElementById('stego_file').value;
+                else
+                    sf = document.getElementById('cover_file').value;
+                if (!sf) {
+                    if (extract)
+                        alert('Please, select the stego file.');
+                    else
+                        alert('Please, select the cover file.');
+                    return;
+                }
+                var passphrase;
+                if (extract) {
+                    var usePassphrase = document.getElementById('x_passphrase_r').getAttribute('selected') == 'true';
+                    var useKeyfile = document.getElementById('x_keyfile_r').getAttribute('selected') == 'true';
+                    if (usePassphrase) {
+                        passphrase = document.getElementById('x_passphrase').value;
+                        if (!passphrase) {
+                            alert('Please, enter the passphrase.');
+                            return;
+                        }
+                    }
+                    else if (useKeyfile) {
+                        var keyfile = document.getElementById('x_keyfile').value;
+                        if (!keyfile) {
+                            alert('Please, select the keyfile.');
+                            return;
+                        }
+                        passphrase = readPassphraseFromKeyfile(keyfile);
+                        if (!passphrase) {
+                            alert('Sorry, but the keyfile seems to be empty.');
+                            return;
+                        }
+                    }
+                }
+                var file = getOrCreateFile(sf);
+                if (file) {
+                    try {
+                        var command = ['steghide', 'info'];
+                        if (extract)
+                            command.push('-p', passphrase);
+                        command.push(file.name);
+                        var processBuilder = new java.lang.ProcessBuilder(command);
+                        var process = processBuilder.start();
+                        var processStdout = new java.io.BufferedReader(new java.io.InputStreamReader(
+                                                                            process.getInputStream()));
+                        var processStderr = new java.io.BufferedReader(new java.io.InputStreamReader(
+                                                                            process.getErrorStream()));
+                        var textbox;
+                        if (extract)
+                            textbox = document.getElementById('extract_log');
+                        else
+                            textbox = document.getElementById('embed_log');
+                        var output = '';
+                        var line;
+                        while ((line = processStdout.readLine()) != null)
+                            output += line + '\n';
+                        textbox.value = output;
+                        var stderr = '';
+                        while ((line = processStderr.readLine()) != null)
+                            stderr += line + '\n';
+                        textbox.value += stderr;
+                        process.waitFor();
+                    }
+                    finally {
+                        if (file.temporary)
+                            unlink(file.name);
+                    }
+                }
+            }
+            catch(e) {
+                alert(e);
+            }
+        }
+    ]]>
+    </script>
+
+    <tabbox id="tabbox" flex="1">
+        <tabs>
+            <tab label="Embedding"/>
+            <tab label="Extracting"/>
+            <tab label="About"/>
+        </tabs>
+        <tabpanels flex="1">
+            <tabpanel>
+                <vbox flex="1">
+                    <groupbox>
+                        <caption label="Files"/>
+                        <grid>
+                            <columns>
+                                <column flex="0"/>
+                                <column flex="99"/>
+                                <column flex="0"/>
+                            </columns>
+                            <rows>
+                                <row>
+                                    <label value="Cover file:"/>
+                                    <textbox id="cover_file" emptytext="The file that will be used to embed data" onclick="onBrowseCoverFileClick()"/>
+                                    <button id="browse_cover_file" label="Browse..." onclick="onBrowseCoverFileClick()"/>
+                                </row>
+                                <row>
+                                    <label value="Embed file:"/>
+                                    <textbox id="embed_file" emptytext="The file that will be embedded" onclick="onBrowseEmbedFileClick()" onchange="onEmbedFileChange()"/>
+                                    <button id="browse_embed_file" label="Browse..." onclick="onBrowseEmbedFileClick()"/>
+                                </row>
+                                <row>
+                                    <label value="Output file:"/>
+                                    <textbox id="output_file" emptytext="The name for the stego file that will be created" onclick="onBrowseOutputFileClick()" onchange="onOutputFileChange()"/>
+                                    <button id="browse_output_file" label="Browse..." onclick="onBrowseOutputFileClick()"/>
+                                </row>
+                            </rows>
+                        </grid>
+                    </groupbox>
+                    <vbox align="center">
+                        <button id="embed" type="menu-button" label="Embed" oncommand="if (event.target == this) onEmbedCommand();">
+                            <menupopup>
+                                <menuitem label="Info" oncommand="showSteghideInfo()"/>
+                                <menuseparator/>
+                                <menuitem label="Save entered text as..." oncommand="saveTextAs('embed_text')"/>
+                                <menuitem label="Clear" oncommand="clearTextboxes('embed_text', 'embed_log')"/>
+                            </menupopup>
+                        </button>
+                    </vbox>
+                    <vbox flex="99">
+                        <hbox pack="center">
+                            <checkbox id="embed_text_cb" label="Embed text:" checked="true"/>
+                        </hbox>
+                        <textbox id="embed_text" multiline="true" onchange="onEmbedTextChange()" flex="99"/>
+                    </vbox>
+                    <vbox>
+                        <hbox pack="center">
+                            <label value="Log window"/>
+                        </hbox>
+                        <textbox id="embed_log" multiline="true" height="50" flex="1"/>
+                    </vbox>
+                    <hbox flex="1">
+                        <groupbox>
+                            <caption label="Encryption"/>
+                            <grid>
+                                <columns>
+                                    <column flex="1"/>
+                                    <column flex="1"/>
+                                </columns>
+                                <rows>
+                                    <row>
+                                        <label value="Algorithm:"/>
+                                        <menulist id="algorithm" value="serpent" persist="value">
+                                            <menupopup>
+                                                <menuitem value="" label="None"/>
+                                                <menuitem value="blowfish" label="Blowfish"/>
+                                                <menuitem value="cast-128" label="CAST-128"/>
+                                                <menuitem value="cast-256" label="CAST-256"/>
+                                                <menuitem value="des" label="DES"/>
+                                                <menuitem value="gost" label="GOST"/>
+                                                <menuitem value="loki97" label="Loki97"/>
+                                                <menuitem value="rc2" label="RC2"/>
+                                                <menuitem value="rijndael-128" label="Rijndael-128"/>
+                                                <menuitem value="rijndael-192" label="Rijndael-192"/>
+                                                <menuitem value="rijndael-256" label="Rijndael-256"/>
+                                                <menuitem value="saferplus" label="SAFER+"/>
+                                                <menuitem value="serpent" label="Serpent"/>
+                                                <menuitem value="tripledes" label="Triple DES"/>
+                                                <menuitem value="twofish" label="Twofish"/>
+                                                <menuitem value="xtea" label="XTea"/>
+                                            </menupopup>
+                                        </menulist>
+                                    </row>
+                                    <row>
+                                        <label value="Mode:"/>
+                                        <menulist id="mode" value="cbc" persist="value">
+                                            <menupopup>
+                                                <menuitem value="cbc" label="CBC"/>
+                                                <menuitem value="cfb" label="CFB"/>
+                                                <menuitem value="ctr" label="CTR"/>
+                                                <menuitem value="ecb" label="ECB"/>
+                                                <menuitem value="ncfb" label="NCFB"/>
+                                                <menuitem value="nofb" label="NOFB"/>
+                                                <menuitem value="ofb" label="OFB"/>
+                                            </menupopup>
+                                        </menulist>
+                                    </row>
+                                </rows>
+                            </grid>
+                        </groupbox>
+                        <groupbox>
+                            <caption label="Options"/>
+                            <grid>
+                                <columns>
+                                    <column flex="1"/>
+                                    <column flex="1"/>
+                                </columns>
+                                <rows>
+                                    <row>
+                                        <label value="Compression level:"/>
+                                        <textbox id="compression" value="9" min="0" max="9" type="number" maxwidth="50" persist="value"/>
+                                    </row>
+                                    <row>
+                                        <checkbox id="no_checksum" label="No CRC32 checksum" persist="checked"/>
+                                    </row>
+                                    <row>
+                                        <checkbox id="dont_embed_filename" label="Don't embed original file name" checked="true" persist="checked"/>
+                                    </row>
+                                    <row>
+                                        <checkbox id="overwrite_cover_file" label="Use cover file as output file" checked="true"/>
+                                    </row>
+                                </rows>
+                            </grid>
+                        </groupbox>
+                        <groupbox flex="1">
+                            <caption label="Passphrase / Keyfile"/>
+                            <grid>
+                                <columns>
+                                    <column flex="1"/>
+                                    <column flex="99"/>
+                                    <column flex="1"/>
+                                </columns>
+                                <rows>
+                                    <row>
+                                        <radio id="e_passphrase_r" label="Passphrase:" selected="true"/>
+                                        <textbox id="e_passphrase" type="password" value="hiddenchan" onkeypress="onEmbedKeyPress(event)" onchange="onPassChange(this.id)"/>
+                                    </row>
+                                    <row>
+                                        <radio id="e_keyfile_r" label="Keyfile:" selected="false"/>
+                                        <textbox id="e_keyfile" emptytext="The key file to read passphrase from" onclick="onBrowseEmbedKeyfileClick()" onchange="onPassChange(this.id)"/>
+                                        <button id="browse_embed_keyfile" label="Browse..." onclick="onBrowseEmbedKeyfileClick()"/>
+                                    </row>
+                                </rows>
+                            </grid>
+                        </groupbox>
+                    </hbox>
+                </vbox>
+            </tabpanel>
+            <tabpanel>
+                <vbox flex="1">
+                    <groupbox>
+                        <caption label="Files / Decryption"/>
+                        <grid>
+                            <columns>
+                                <column flex="0"/>
+                                <column flex="99"/>
+                                <column flex="0"/>
+                            </columns>
+                            <rows>
+                                <row>
+                                    <label value="Stego file:"/>
+                                    <textbox id="stego_file" emptytext="The file that contains embedded data" onclick="onBrowseStegoFileClick()"/>
+                                    <button id="browse_stego_file" label="Browse..." onclick="onBrowseStegoFileClick()"/>
+                                </row>
+                                <row>
+                                    <label value="Output file:"/>
+                                    <textbox id="extract_file" emptytext="The file in which the data embedded in the stego file will be written" onclick="onBrowseExtractFileClick()" onchange="onExtractFileChange()"/>
+                                    <button id="browse_extract_file" label="Browse..." onclick="onBrowseExtractFileClick()"/>
+                                </row>
+                                <row>
+                                    <label/>
+                                    <checkbox id="output_to_stdout" label="Output to stdout" checked="true"/>
+                                </row>
+                                <row>
+                                    <radio id="x_passphrase_r" label="Passphrase:" selected="true"/>
+                                    <textbox id="x_passphrase" type="password" value="hiddenchan" onkeypress="onExtractKeyPress(event)" onchange="onPassChange(this.id)"/>
+                                </row>
+                                <row>
+                                    <radio id="x_keyfile_r" label="Keyfile:"/>
+                                    <textbox id="x_keyfile" onkeypress="onExtractKeyPress(event)" onclick="onBrowseExtractKeyfileClick()" onchange="onPassChange(this.id)"/>
+                                    <button id="browse_keyfile" label="Browse..." onclick="onBrowseExtractKeyfileClick()"/>
+                                </row>
+                            </rows>
+                        </grid>
+                    </groupbox>
+                    <vbox align="center">
+                        <button id="extract" type="menu-button" label="Extract" oncommand="if (event.target == this) onExtractCommand();">
+                            <menupopup>
+                                <menuitem label="Info" oncommand="showSteghideInfo(true)"/>
+                                <menuseparator/>
+                                <menuitem label="Save extracted text as..." oncommand="saveTextAs('extracted_text')"/>
+                                <menuitem label="Clear" oncommand="clearTextboxes('extract_log', 'extracted_text')"/>
+                                <menuseparator/>
+                                <menuitem id="dont_erase_previous_output" type="checkbox" label="Don't erase previous output on extract"/>
+                            </menupopup>
+                        </button>
+                    </vbox>
+                    <vbox>
+                        <hbox pack="center">
+                            <label value="Log window"/>
+                        </hbox>
+                        <textbox id="extract_log" multiline="true" height="50" flex="1"/>
+                    </vbox>
+                    <hbox pack="center">
+                        <label value="Hidden data"/>
+                    </hbox>
+                    <textbox id="extracted_text" multiline="true" flex="1"/>
+                </vbox>
+            </tabpanel>
+            <tabpanel>
+                <vbox>
+                    <caption label="steghide-firefox v0.2.1.1"/>
+                    <description style="white-space: pre">
+Steganography for Firefox using <html:a href="http://steghide.sourceforge.net/">steghide</html:a>
+Author: Anonymous &lt;<html:a href="mailto:hiddenchan@mail.i2p">hiddenchan@mail.i2p</html:a>&gt;
+Home page: <html:a href="https://github.com/anonymous-incognito/steghide-firefox">https://github.com/anonymous-incognito/steghide-firefox</html:a>
+</description>
+                </vbox>
+            </tabpanel>
+        </tabpanels>
+    </tabbox>
+</window>

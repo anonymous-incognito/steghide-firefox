@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<overlay xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+    <script type="application/x-javascript">
+    <![CDATA[
+        const DIALOG_URL = 'chrome://steghide-firefox/content/SteghideDialog.xul';
+        var node = null;
+        function showSteghideDialogTab(tabIndex) {
+            gBrowser.selectedTab = gBrowser.addTab(DIALOG_URL + '?t=' + tabIndex + ';url=' + node.currentURI.spec);
+        }
+        function showSteghideDialog() {
+            gBrowser.selectedTab = gBrowser.addTab(DIALOG_URL);
+        }
+        function showHideItems() {
+            node = document.popupNode;
+            var isImage = node instanceof Components.interfaces.nsIImageLoadingContent && node.currentURI;
+            document.getElementById('steghide_separator').hidden = !isImage;
+            document.getElementById('steghide_embed').hidden = !isImage;
+            document.getElementById('steghide_extract').hidden = !isImage;
+        }
+        function onLoad() {
+            document.getElementById('contentAreaContextMenu').addEventListener('popupshowing', showHideItems, false);
+        }
+        window.addEventListener('load', onLoad, false);
+    ]]>
+    </script>
+
+    <menupopup id="contentAreaContextMenu">
+        <menuseparator id="steghide_separator"/>
+        <menuitem id="steghide_embed" label="Hide secret data" oncommand="showSteghideDialogTab(0)"/>
+        <menuitem id="steghide_extract" label="Extract secret data" oncommand="showSteghideDialogTab(1)"/>
+    </menupopup>
+
+    <menupopup id="menu_ToolsPopup">
+        <menuseparator/>
+        <menuitem id="show_steghide_dialog" label="Use steghide, Luke!" oncommand="showSteghideDialog();"/>
+    </menupopup>
+</overlay>
+

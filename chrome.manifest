@@ -1,0 +1,3 @@
+content steghide-firefox chrome/content/
+overlay chrome://browser/content/browser.xul chrome://steghide-firefox/content/browser.xul
+
