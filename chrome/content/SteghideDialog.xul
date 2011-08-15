@@ -752,13 +752,17 @@
                 </vbox>
             </tabpanel>
             <tabpanel>
-                <vbox>
+                <vbox align="center" flex="1">
                     <caption label="steghide-firefox v0.2.1.1"/>
+                    <caption label="Steganography for Firefox using steghide"/>
                     <description style="white-space: pre">
-Steganography for Firefox using <html:a href="http://steghide.sourceforge.net/">steghide</html:a>
 Author: Anonymous &lt;<html:a href="mailto:hiddenchan@mail.i2p">hiddenchan@mail.i2p</html:a>&gt;
 Home page: <html:a href="https://github.com/anonymous-incognito/steghide-firefox">https://github.com/anonymous-incognito/steghide-firefox</html:a>
+Art by: Anonymous
 </description>
+                    <hbox align="center" flex="1">
+                        <image src="desu.png"/>
+                    </hbox>
                 </vbox>
             </tabpanel>
         </tabpanels>
