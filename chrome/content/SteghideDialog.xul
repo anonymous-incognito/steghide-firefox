@@ -585,7 +585,7 @@
                         <hbox pack="center">
                             <checkbox id="embed_text_cb" label="Embed text:" checked="true"/>
                         </hbox>
-                        <textbox id="embed_text" multiline="true" onchange="onEmbedTextChange()" flex="99"/>
+                        <textbox id="embed_text" multiline="true" spellcheck="true" onchange="onEmbedTextChange()" flex="99"/>
                     </vbox>
                     <vbox>
                         <hbox pack="center">
