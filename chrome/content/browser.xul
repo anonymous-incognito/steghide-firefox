@@ -31,7 +31,7 @@
     <menupopup id="contentAreaContextMenu">
         <menuseparator id="steghide_separator"/>
         <menuitem id="steghide_embed" label="Hide secret data" oncommand="showSteghideDialogTab(0)"/>
-        <menuitem id="steghide_extract" label="Extract secret data" oncommand="showSteghideDialogTab(1)"/>
+        <menuitem id="steghide_extract" label="Extract hidden data" oncommand="showSteghideDialogTab(1)"/>
     </menupopup>
 
     <menupopup id="menu_ToolsPopup">
