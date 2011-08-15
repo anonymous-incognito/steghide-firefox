@@ -753,7 +753,7 @@
             </tabpanel>
             <tabpanel>
                 <vbox align="center" flex="1">
-                    <caption label="steghide-firefox v0.2.1.1"/>
+                    <caption label="steghide-firefox v0.2.2"/>
                     <caption label="Steganography for Firefox using steghide"/>
                     <description style="white-space: pre">
 Author: Anonymous &lt;<html:a href="mailto:hiddenchan@mail.i2p">hiddenchan@mail.i2p</html:a>&gt;
