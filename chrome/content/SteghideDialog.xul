@@ -66,6 +66,11 @@
             document.getElementById('dont_erase_previous_output').setAttribute('checked',
                 getPref('dontErasePreviousOutputOnExtract', 'bool')
             );
+            if (document.getElementById('tabbox').selectedIndex == 1 &&
+                document.getElementById('stego_file').value &&
+                document.getElementById('x_passphrase').value) {
+                document.getElementById('extract').click();
+            }
         }
         function onUnload() {
             var e = document.getElementById('compression');
