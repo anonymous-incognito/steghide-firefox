@@ -4,6 +4,7 @@
 
 <overlay xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
+    <script type="application/x-javascript" src="chrome://steghide-firefox/content/ExtInit.js" />
     <script type="application/x-javascript">
     <![CDATA[
         const DIALOG_URL = 'chrome://steghide-firefox/content/SteghideDialog.xul';
