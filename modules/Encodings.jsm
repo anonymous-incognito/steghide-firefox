@@ -32,16 +32,16 @@ var Utf8 = {
             if (c <= 0x7f) {
                 result += chr(c);
             }
-            else if ((c >= 0x80) && (c <= 0x7ff)) {
+            else if (c <= 0x7ff) {
                 result += chr((c >> 6) | 0xc0) +
                           chr((c & 0x3f) | 0x80);
             }
-            else if ((c >= 0x800) && (c <= 0xffff)) {
+            else if (c <= 0xffff) {
                 result += chr((c >> 12) | 0xe0) +
                           chr(((c >> 6) & 0x3f) | 0x80) +
                           chr((c & 0x3f) | 0x80);
             }
-            else if ((c >= 0x10000) && (c <= 0x10ffff)) {
+            else if (c <= 0x10ffff) {
                 result += chr((c >> 18) | 0xf0) +
                           chr(((c >> 12) & 0x3f) | 0x80) +
                           chr(((c >> 6) & 0x3f) | 0x80) +
