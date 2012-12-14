@@ -38,20 +38,15 @@ var OS = {
     which: function(filename) {
         var env = Cc[NS_ENVIRONMENT].getService(Ci.nsIEnvironment);
         var win = OS.getName().substring(0, 3) == 'WIN';
-        var dirsep = win ? ';' : ':';
+        var paths = env.get('PATH').split(win ? ';' : ':');
         var ext = win ? '.exe' : '';
         var file = Cc[NS_LOCAL_FILE].createInstance(Ci.nsILocalFile);
-        var paths = env.get('PATH').split(dirsep);
-        var path;
         for (var i = 0; i < paths.length; i++) {
             file.initWithPath(paths[i]);
             file.append(filename + ext);
-            if (file.exists()) {
-                path = file.path;
-                break;
-            }
+            if (file.exists())
+                return file.path;
         }
-        return path;
     },
 
     unlink: function (filename) {
