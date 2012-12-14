@@ -19,7 +19,7 @@
     along with steghide-firefox. If not, see <http://www.gnu.org/licenses/>.
 */
 
-Components.utils.import("resource://gre/modules/FileUtils.jsm");
+Components.utils.import('resource://gre/modules/FileUtils.jsm');
 
 Components.utils.import('resource://steghide-firefox/subprocess.jsm');
 
@@ -192,7 +192,7 @@ function makeURI(aURL, aOriginCharset, aBaseURI) {
 }
 function temporaryFileFromURL(aURL) {
     var aURI = makeURI(aURL);
-    var file = FileUtils.getFile("TmpD", ["steghide.tmp"]);
+    var file = FileUtils.getFile('TmpD', ['steghide.tmp']);
     file.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0600);
 
     const nsIWebBrowserPersist = Components.interfaces.nsIWebBrowserPersist;
@@ -238,11 +238,11 @@ function getOrCreateFile(uri, validate) {
 function readPassphraseFromKeyfile(path) {
     var file = new FileUtils.File(path);
 
-    var istream = Components.classes["@mozilla.org/network/file-input-stream;1"]
+    var istream = Components.classes['@mozilla.org/network/file-input-stream;1']
         .createInstance(Components.interfaces.nsIFileInputStream);
     istream.init(file, -1, -1, false);
 
-    var bstream = Components.classes["@mozilla.org/binaryinputstream;1"]
+    var bstream = Components.classes['@mozilla.org/binaryinputstream;1']
         .createInstance(Components.interfaces.nsIBinaryInputStream);
     bstream.setInputStream(istream);
 
@@ -308,7 +308,7 @@ function onEmbedCommand() {
         var file = getOrCreateFile(cf, function(proto) {
             if ((proto == 'http' || proto == 'https') &&
                 (overwriteCoverFile || sf == '')) {
-                alert("Please, uncheck the 'Use cover file as output file' checkbox and specify the output file name.");
+                alert("Please, uncheck the `Use cover file as output file' checkbox and specify the output file name.");
                 return false;
             }
             return true;
