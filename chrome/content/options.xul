@@ -27,6 +27,7 @@
     title="Steghide for Firefox preferences">
     <prefpane>
         <preferences>
+            <preference id="path-to-steghide" instantApply="true" name="extensions.steghidefirefox.pathToSteghide" type="string"/>
             <preference id="default-passphrase" instantApply="true" name="extensions.steghidefirefox.defaultPassphrase" type="string"/>
             <preference id="dont-erase-previous-output-on-extract" instantApply="true" name="extensions.steghidefirefox.dontErasePreviousOutputOnExtract" type="bool"/>
         </preferences>
@@ -36,6 +37,10 @@
                 <column flex="1"/>
             </columns>
             <rows>
+                <row>
+                    <label value="Path to the steghide executable:"/>
+                    <textbox preference="path-to-steghide"/>
+                </row>
                 <row>
                     <label value="Default passphrase:"/>
                     <textbox preference="default-passphrase" type="password"/>
