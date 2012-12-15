@@ -29,6 +29,8 @@ const NS_ENVIRONMENT = '@mozilla.org/process/environment;1';
 const NS_LOCAL_FILE = '@mozilla.org/file/local;1';
 const NS_XUL_RUNTIME = '@mozilla.org/xre/app-info;1';
 
+const PREF_BRANCH = 'extensions.steghidefirefox.';
+
 var OS = {
     getName: function () {
         xulRuntime = Cc[NS_XUL_RUNTIME].getService(Ci.nsIXULRuntime);
@@ -60,7 +62,7 @@ var Prefs = {
     get: function(name, type) {
         var prefs = Cc[NS_PREF_SERVICE]
             .getService(Ci.nsIPrefService)
-            .getBranch('extensions.steghidefirefox.');
+            .getBranch(PREF_BRANCH);
         switch (type) {
             case 'bool':
                 return prefs.getBoolPref(name);
@@ -86,7 +88,7 @@ var Prefs = {
     set: function(name, value) {
         var prefs = Cc[NS_PREF_SERVICE]
             .getService(Ci.nsIPrefService)
-            .getBranch('extensions.steghidefirefox.');
+            .getBranch(PREF_BRANCH);
         switch (typeof(value)) {
             case 'boolean':
                 prefs.setBoolPref(name, value);
