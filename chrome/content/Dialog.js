@@ -193,7 +193,7 @@ function makeURI(aURL, aOriginCharset, aBaseURI) {
 function temporaryFileFromURL(aURL) {
     var aURI = makeURI(aURL);
     var file = FileUtils.getFile('TmpD', ['steghide.tmp']);
-    file.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0600);
+    file.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, parseInt('0600', 8));
 
     const nsIWebBrowserPersist = Components.interfaces.nsIWebBrowserPersist;
     var persist = Components.classes['@mozilla.org/embedding/browser/nsWebBrowserPersist;1']
