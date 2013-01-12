@@ -33,7 +33,7 @@ const PREF_BRANCH = 'extensions.steghidefirefox.';
 
 var OS = {
     getName: function () {
-        xulRuntime = Cc[NS_XUL_RUNTIME].getService(Ci.nsIXULRuntime);
+        var xulRuntime = Cc[NS_XUL_RUNTIME].getService(Ci.nsIXULRuntime);
         return xulRuntime.OS;
     },
 
