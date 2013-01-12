@@ -20,6 +20,7 @@
 */
 
 Components.utils.import('resource://gre/modules/FileUtils.jsm');
+Components.utils.import('resource://gre/modules/PrivateBrowsingUtils.jsm');
 
 Components.utils.import('resource://steghide-firefox/subprocess.jsm');
 
@@ -218,7 +219,13 @@ function temporaryFileFromURL(aURL) {
         }
     };
     persist.progressListener = progressListener;
-    persist.saveURI(aURI, null, null, null, null, file);
+    var nsILoadContext = null;
+    try {
+        nsILoadContext = PrivateBrowsingUtils.privacyContextFromWindow(window);
+    }
+    catch(e) {
+    }
+    persist.saveURI(aURI, null, null, null, null, file, nsILoadContext);
     var currentThread = Components.classes['@mozilla.org/thread-manager;1']
                             .getService(Components.interfaces.nsIThreadManager).currentThread;
     while(!progressListener.done)
