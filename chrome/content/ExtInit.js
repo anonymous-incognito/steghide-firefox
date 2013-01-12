@@ -1,4 +1,4 @@
-/ vim:sts=4:et:sw=4:ai:nosi:
+// vim:sts=4:et:sw=4:ai:nosi:
 /** steghide-firefox is a Mozilla Firefox addon allowing use of steghide from
     inside a browser.
     Copyright (C) 2011-2012 Anonymous
