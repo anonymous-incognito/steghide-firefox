@@ -6,7 +6,7 @@
 
         <em:id>steghide-firefox@hiddenchan.i2p</em:id>
         <em:name>steghide-firefox</em:name>
-        <em:version>0.3</em:version>
+        <em:version>0.3.1</em:version>
         <em:description>Steganography for Firefox using steghide</em:description>
         <em:creator>Anonymous</em:creator>
         <em:homepageURL>https://github.com/anonymous-incognito/steghide-firefox</em:homepageURL>
