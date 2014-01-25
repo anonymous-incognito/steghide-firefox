@@ -25,7 +25,7 @@ function onExtensionLoad() {
     removeEventListener('load', arguments.callee, false);
     var pathToSteghide = Prefs.get('pathToSteghide');
     if (!pathToSteghide) {
-        pathToSteghide = OS.which('steghide');
+        pathToSteghide = OSUtils.which('steghide');
         Prefs.set('pathToSteghide', pathToSteghide);
     }
 }

@@ -19,7 +19,7 @@
     along with steghide-firefox. If not, see <http://www.gnu.org/licenses/>.
 */
 
-let EXPORTED_SYMBOLS = [ 'OS', 'Prefs' ];
+let EXPORTED_SYMBOLS = [ 'OSUtils', 'Prefs' ];
 
 const Cc = Components.classes;
 const Ci = Components.interfaces;
@@ -31,7 +31,7 @@ const NS_XUL_RUNTIME = '@mozilla.org/xre/app-info;1';
 
 const PREF_BRANCH = 'extensions.steghidefirefox.';
 
-var OS = {
+var OSUtils = {
     getName: function () {
         var xulRuntime = Cc[NS_XUL_RUNTIME].getService(Ci.nsIXULRuntime);
         return xulRuntime.OS;
@@ -39,7 +39,7 @@ var OS = {
 
     which: function(filename) {
         var env = Cc[NS_ENVIRONMENT].getService(Ci.nsIEnvironment);
-        var win = OS.getName().substring(0, 3) == 'WIN';
+        var win = OSUtils.getName().substring(0, 3) == 'WIN';
         var paths = env.get('PATH').split(win ? ';' : ':');
         var ext = win ? '.exe' : '';
         var file = Cc[NS_LOCAL_FILE].createInstance(Ci.nsILocalFile);

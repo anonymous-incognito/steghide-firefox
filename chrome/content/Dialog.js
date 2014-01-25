@@ -32,7 +32,8 @@ const KEY_ESCAPE = 27;
 const MASKS = {title: 'Formats supported by steghide',
                filter: '*.jpg; *.jpeg; *.bmp; *.wav; *.au'};
 const STATE_STOP = Components.interfaces.nsIWebProgressListener.STATE_STOP;
-const win = OS.getName().substring(0, 3) == 'WIN';
+const win = OSUtils.getName().substring(0, 3) == 'WIN';
+const steghideNotFoundMsg = 'Unfortunately, steghide was not found in your $PATH. Install it, then restart Firefox. Alternatively, you can go to about:config and set extensions.steghidefirefox.pathToSteghide option to, e.g., /usr/bin/steghide or C:\\Program Files\\steghide\\steghide.exe';
 function groupRadio() {
     var radios = arguments;
     for (var i = 0; i < radios.length; i++) {
@@ -263,6 +264,11 @@ function scrollTextboxToBottom(textbox) {
 }
 function onEmbedCommand() {
     try {
+        var pathToSteghide = Prefs.get('pathToSteghide');
+        if (!pathToSteghide) {
+            alert(steghideNotFoundMsg);
+            return;
+        }
         var cf = document.getElementById('cover_file').value;
         if (!cf) {
             alert('Please, select the cover file.');
@@ -344,7 +350,7 @@ function onEmbedCommand() {
                 args.push('-sf', sf);
             var output = '';
             subprocess.call({
-                command: Prefs.get('pathToSteghide'),
+                command: pathToSteghide,
                 arguments: args,
                 stdin: (
                     embedText ?
@@ -363,7 +369,7 @@ function onEmbedCommand() {
                     }
                     finally {
                         if (file.temporary)
-                            OS.unlink(file.name);
+                            OSUtils.unlink(file.name);
                     }
                 },
                 mergeStderr: true
@@ -376,6 +382,11 @@ function onEmbedCommand() {
 }
 function onExtractCommand() {
     try {
+        var pathToSteghide = Prefs.get('pathToSteghide');
+        if (!pathToSteghide) {
+            alert(steghideNotFoundMsg);
+            return;
+        }
         var sf = document.getElementById('stego_file').value;
         if (!sf) {
             alert('Please, select the stego file.');
@@ -420,7 +431,7 @@ function onExtractCommand() {
             ];
             var output = '', error = '';
             subprocess.call({
-                command: Prefs.get('pathToSteghide'),
+                command: pathToSteghide,
                 arguments: args,
                 charset: null,
                 stdout: function(data) {
@@ -462,7 +473,7 @@ function onExtractCommand() {
                     }
                     finally {
                         if (file.temporary)
-                            OS.unlink(file.name);
+                            OSUtils.unlink(file.name);
                     }
                 },
                 mergeStderr: false
@@ -536,7 +547,7 @@ function showSteghideInfo(extract) {
                     }
                     finally {
                         if (file.temporary)
-                            OS.unlink(file.name);
+                            OSUtils.unlink(file.name);
                     }
                 },
                 mergeStderr: true
